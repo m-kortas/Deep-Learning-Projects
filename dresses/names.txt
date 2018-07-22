@@ -1,0 +1,14 @@
+beige
+black
+blue
+brown
+gray
+green
+multicolor
+orange
+pink
+red
+violet
+white
+yellow
+transparent
