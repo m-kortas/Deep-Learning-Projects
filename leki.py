@@ -1,8 +1,6 @@
 import os
 
 import cv2
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, np
 from keras.utils import np_utils
 
 LABELS_FILE = "faces/faces_is/train/labels.txt"
@@ -40,33 +38,11 @@ def show_dataset(images, labels):
         cv2.waitKey()
 
 
-def create_model():
-    model = Sequential()
-    model.add(Conv2D(16, (3, 3), activation='relu', input_shape=(128, 128, 3)))
-    model.add(Conv2D(16, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Conv2D(32, (3, 3), activation='relu'))
-    model.add(Conv2D(32, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
-    model.add(Dense(52, activation='softmax'))
-
-    model.compile(loss='categorical_crossentropy', optimizer='Adam')
-    model.summary()
-    return model
-
-
 def main():
     lines = read_labels(LABELS_FILE, 100)
     images, labels = create_dataset(lines)
 
-    images = np.array(images)
-    labels = np.array(labels)
-    model = create_model()
-    model.fit(images, labels, batch_size=10, epochs=10)
+    show_dataset(images, labels)
 
 
 if __name__ == '__main__':
