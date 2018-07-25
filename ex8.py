@@ -2,9 +2,10 @@ import os
 import cv2
 from keras import Sequential
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
-from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, np, BatchNormalization, Activation, regularizers
+from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, np, BatchNormalization, Activation, regularizers, Dropout
 from keras.utils import np_utils
-
+from keras.optimizers import RMSprop, Adam
+from keras.layers import Embedding, LSTM
 
 TRAIN_LABELS_FILE = "faces/faces_is/train/labels.txt"
 VAL_LABELS_FILE = "faces/faces_is/val/labels.txt"
@@ -61,6 +62,10 @@ def create_model():
     model.add(BatchNormalization())
     model.add(Activation("relu"))
 
+    model.add(Conv2D(32, (3, 3)))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
+
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Flatten())
@@ -71,7 +76,10 @@ def create_model():
 
     model.add(Dense(52, activation='softmax'))
 
-    model.compile(loss='categorical_crossentropy', metrics=['categorical_accuracy'], optimizer='sgd')
+
+
+    opt = Adam()
+    model.compile(loss='categorical_crossentropy', metrics=['categorical_accuracy'], optimizer=opt)
    # model.load_weights("weights.hdf5")
     return model
 
@@ -79,9 +87,8 @@ def create_model():
 
 def get_callbacks():
     callbacks = []
-
     mc = ModelCheckpoint("weights.hdf5", monitor="val_loss", save_best_only=True, verbose=1)
-    es = EarlyStopping(monitor="val_loss", patience=2, verbose=1)
+    es = EarlyStopping(monitor="val_categorical_accuracy", patience=2, verbose=1)
     ts = TensorBoard()
     callbacks.append(mc)
     callbacks.append(ts)
@@ -89,20 +96,53 @@ def get_callbacks():
 
     return callbacks
 
+def generate_dataset(labels_file, dirname, batch_size=32):
+    with open(labels_file) as f:
+        lines = f.read().splitlines()
+
+    while True:
+        images = []
+        labels = []
+        cnt = 1
+        for i in range(batch_size):
+            if i * cnt > len(lines):
+                cnt = 1
+
+            path, label = lines[i*cnt].split()
+            path = os.path.join(dirname, path)
+
+            img = cv2.imread(path)
+            img = cv2.resize(img, (128, 128), interpolation=cv2.INTER_AREA)
+            images.append(img)
+
+            label = int(label)
+            label = np_utils.to_categorical(label, 52)
+            labels.append(label)
+
+        yield (np.array(images), np.array(labels))
+
+        cnt = cnt + 1
+
+
 
 def main():
-    train_lines = read_labels(TRAIN_LABELS_FILE, 100)
-    train_images, train_labels = create_dataset(train_lines, os.path.dirname(TRAIN_LABELS_FILE))
+    #   train_lines = read_labels(TRAIN_LABELS_FILE, 100)
+    #  train_images, train_labels = create_dataset(train_lines, os.path.dirname(TRAIN_LABELS_FILE))
 
-    val_lines = read_labels(VAL_LABELS_FILE, 50)
-    val_images, val_labels = create_dataset(val_lines, os.path.dirname(VAL_LABELS_FILE))
+    # val_lines = read_labels(VAL_LABELS_FILE, 50)
+    # val_images, val_labels = create_dataset(val_lines, os.path.dirname(VAL_LABELS_FILE))
 
     callbacks = get_callbacks()
 
     model = create_model()
     model.summary()
-    model.fit(train_images, train_labels, batch_size=10, epochs=100, validation_data=(val_images, val_labels), callbacks=callbacks)
-
+   # model.fit(train_images, train_labels, batch_size=10, epochs=100, validation_data=(val_images, val_labels), callbacks=callbacks)
+    model.fit_generator(generate_dataset(TRAIN_LABELS_FILE, os.path.dirname(TRAIN_LABELS_FILE)),
+                        epochs=100,
+                        validation_data = generate_dataset(VAL_LABELS_FILE, os.path.dirname(VAL_LABELS_FILE)),
+                        steps_per_epoch = 10,
+                        validation_steps = 2,
+                        callbacks = callbacks)
 
 if __name__ == '__main__':
     main()
