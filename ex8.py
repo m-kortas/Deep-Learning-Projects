@@ -44,25 +44,13 @@ def show_dataset(images, labels):
 def create_model():
     model = Sequential()
 
-    model.add(Conv2D(16, (3, 3), input_shape=(128, 128, 3)))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-
-    model.add(Conv2D(16, (3, 3)))
+    model.add(Conv2D(16, (24, 24), input_shape=(128, 128, 3)))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
 
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(Conv2D(32, (3, 3)))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-
-    model.add(Conv2D(32, (3, 3)))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-
-    model.add(Conv2D(32, (3, 3)))
+    model.add(Conv2D(32, (24, 24)))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
 
@@ -87,7 +75,7 @@ def create_model():
 
 def get_callbacks():
     callbacks = []
-    mc = ModelCheckpoint("weights.hdf5", monitor="val_loss", save_best_only=True, verbose=1)
+    mc = ModelCheckpoint("weights2.hdf5", monitor="val_categorical_accuracy", save_best_only=True, verbose=1)
     es = EarlyStopping(monitor="val_categorical_accuracy", patience=2, verbose=1)
     ts = TensorBoard()
     callbacks.append(mc)
