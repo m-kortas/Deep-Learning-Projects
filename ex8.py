@@ -9,6 +9,8 @@ from keras.layers import Embedding, LSTM
 
 TRAIN_LABELS_FILE = "faces/faces_is/train/labels.txt"
 VAL_LABELS_FILE = "faces/faces_is/val/labels.txt"
+TEST_LABELS_FILE = "faces/faces_is/test/labels.txt"
+
 
 def read_labels(filename, number):
     with open(filename) as f:
@@ -68,8 +70,9 @@ def create_model():
 
     opt = Adam()
     model.compile(loss='categorical_crossentropy', metrics=['categorical_accuracy'], optimizer=opt)
-   # model.load_weights("weights.hdf5")
+    model.load_weights("weights2.hdf5")
     return model
+
 
 
 
@@ -83,6 +86,7 @@ def get_callbacks():
     callbacks.append(es)
 
     return callbacks
+
 
 def generate_dataset(labels_file, dirname, batch_size=32):
     with open(labels_file) as f:
@@ -114,23 +118,34 @@ def generate_dataset(labels_file, dirname, batch_size=32):
 
 
 def main():
-    #   train_lines = read_labels(TRAIN_LABELS_FILE, 100)
-    #  train_images, train_labels = create_dataset(train_lines, os.path.dirname(TRAIN_LABELS_FILE))
+    train_lines = read_labels(TRAIN_LABELS_FILE, 100)
+    train_images, train_labels = create_dataset(train_lines, os.path.dirname(TRAIN_LABELS_FILE))
 
-    # val_lines = read_labels(VAL_LABELS_FILE, 50)
-    # val_images, val_labels = create_dataset(val_lines, os.path.dirname(VAL_LABELS_FILE))
+    val_lines = read_labels(VAL_LABELS_FILE, 50)
+    val_images, val_labels = create_dataset(val_lines, os.path.dirname(VAL_LABELS_FILE))
+
+    test_lines = read_labels(TEST_LABELS_FILE, 50)
+    test_images, test_labels = create_dataset(test_lines, os.path.dirname(TEST_LABELS_FILE))
 
     callbacks = get_callbacks()
 
     model = create_model()
     model.summary()
+    model.get_weights()
    # model.fit(train_images, train_labels, batch_size=10, epochs=100, validation_data=(val_images, val_labels), callbacks=callbacks)
+
     model.fit_generator(generate_dataset(TRAIN_LABELS_FILE, os.path.dirname(TRAIN_LABELS_FILE)),
-                        epochs=100,
-                        validation_data = generate_dataset(VAL_LABELS_FILE, os.path.dirname(VAL_LABELS_FILE)),
-                        steps_per_epoch = 10,
-                        validation_steps = 2,
-                        callbacks = callbacks)
+                         epochs=100,
+                         validation_data = generate_dataset(VAL_LABELS_FILE, os.path.dirname(VAL_LABELS_FILE)),
+                         steps_per_epoch = 10,
+                         validation_steps = 2,
+                         callbacks = callbacks)
+
+   # model.evaluate(test_images, test_labels, batch_size=10)
+
+   # print(model.evaluate(test_images, test_labels, batch_size=10))
+   # print(model.metrics_names)
+
 
 if __name__ == '__main__':
     main()
